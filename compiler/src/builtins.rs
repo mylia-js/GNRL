@@ -18,6 +18,8 @@ use std::hash::Hasher;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
+use std::process::Command;
+
 
 use crate::value::*;
 use crate::value_storage::*;
@@ -970,7 +972,41 @@ builtins! {
     [Max] #[safe = true, desc = "Calculates the max of two numbers", example = "$.assert($.max(1, 2) == 2)"] fn max((a): Number, (b): Number) {Value::Number(a.max(b))}
     [Round] #[safe = true, desc = "Rounds a number", example = "$.assert($.round(1.2) == 1)"] fn round((n): Number) {Value::Number(n.round())}
     [Hypot] #[safe = true, desc = "Calculates the hypothenuse in a right triangle with sides a and b", example = "$.assert($.hypot(3, 4) == 5) // because 3^2 + 4^2 = 5^2"] fn hypot((a): Number, (b): Number) {Value::Number(a.hypot(b))}
-
+    [Argv] #[safe = true, desc = "Gets command-line arguments", example = "$.argv()"] fn argv() {
+        let argv: Vec::<String> = ::std::env::args().collect();
+        let mut output = Vec::<StoredValue>::new();
+        for i in argv.iter() {
+            let val = store_const_value(Value::Str(i.to_string()), globals, context.start_group, CodeArea::new());
+            output.push(val);
+        }
+        Value::Array(output)
+    }
+    [Command] #[safe = false, desc = "Runs a command", example = "$.command('Hello, World!');"]   fn command((cmd): Str) {
+        let string: String = cmd.chars().collect();
+        let (program, args) = string.split_once(" ").unwrap_or((&string, ""));
+        let output = Command::new(program).args(args.split(" ").collect::<Vec<_>>()).output().unwrap();
+        let content = String::from_utf8(output.stdout).unwrap() + &String::from_utf8(output.stderr).unwrap();
+        Value::Str(content.chars().collect())
+    }
+    [LShift] #[safe = true, desc = "Left shift bitwise operator", example="9 << 5"] fn lshift((l): Number, (r): Number) {
+        Value::Number(((l as i64) << r as i64) as f64)
+    } 
+    [RShift] #[safe = true, desc = "Right shift bitwise operator", example="9 >> 5"] fn rshift((l): Number, (r): Number) {
+        Value::Number(((l as i64) >> r as i64) as f64)
+    } 
+    [BW_And] #[safe = true, desc = "AND bitwise operator", example="9 & 5"] fn bw_and((l): Number, (r): Number) {
+        Value::Number(((l as i64) & r as i64) as f64)
+    } 
+    [BW_Not] #[safe = true, desc = "NOT bitwise operator", example="!"] fn bw_and((l): Number) {
+        let i = convert_to_int(l, &info)?;
+        Value::Number((!i) as f64)
+    } 
+    [BW_Or] #[safe = true, desc = "OR bitwise operator", example="?"] fn bw_or((l): Number, (r): Number) {
+        Value::Number((convert_to_int(l, &info)? | convert_to_int(r, &info)?) as f64)
+    } 
+    [Xor] #[safe = true, desc = "XOR bitwise operator", example="?"] fn xor((l): Number, (r): Number) {
+        Value::Number((convert_to_int(l, &info)? ^ convert_to_int(r, &info)?) as f64)
+    } 
     [Add] #[safe = true, desc = "Adds a Geometry Dash object or trigger to the target level", example = "
 extract obj_props
 $.add(obj {
