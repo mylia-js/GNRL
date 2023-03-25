@@ -1,3 +1,25 @@
+# GNRL
+A general-purpose fork of the SPWN programming language
+
+# The Checklist
+√ = completed
+
+☓ = no progress, but planned to be a feature
+
+... = in the works
+
+```
+- $.argv() (√)
+- Allowing unknown arguments (for $.argv) (☓)
+- $.command() (√)
+- $.exit() (√)
+- $.binding() (..., function is finished but is being rewritten into Rust)
+- Bitwise operators (√)
+- BNDR CLI (☓)
+```
+
+<hr>
+
 # SPWN Language
 
 ![spwnnew](https://user-images.githubusercontent.com/85206419/127884996-92251ba7-4c28-4bf0-bb40-d363d5e31ccb.png)
