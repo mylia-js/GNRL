@@ -1,0 +1,34 @@
+let binding = (folder, let args: @array = [], debug = false;) {
+    args = args.map(x => x.replace(' ', '<SP13>'))
+    let command_use = 'cargo build --manifest-path {}/Cargo.toml --release'.fmt(folder);
+    let other_command = './{}/target/release/{} {}'.fmt([folder, folder, args.join(' ')]);
+    let build_cmd = $.command(command_use);
+
+    
+    if (debug) { $.print(build_cmd); };
+
+
+    let resulting = $.command(other_command)
+
+    
+    // $.print(resulting);
+
+
+    let results = [];
+    for e in resulting.split('\n') {
+        let res = e;
+        if (startsWith(res, "[SPWN_BINDING_OUT​]") == true) {
+            res = res.split('[SPWN_BINDING_OUT​]').remove(0).join('')
+            if (res[0] == "\"" && res[res.length - 1] == "\"") {
+                res = res.replace('"', "").replace("<NEWLINE>", "\n").replace("<CR_NEWLINE>", "\r")
+            } else if (res[0] == "[" && res[res.length - 1] == "]") {
+                res = res.split('').remove(0)
+                res.pop();
+                res = res.join('').split(', ').map(x => scanForInt(x));
+            }
+            results.push(res);
+        }
+    };
+    if (results.length == 1) { results = results[0]; }
+    return results;
+};
