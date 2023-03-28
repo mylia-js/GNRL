@@ -18,8 +18,9 @@ A general-purpose fork of the SPWN programming language
 ```
 
 # Finished Features Usage
-`$.argv()` -> `let arguments = $.argv()`
-`$.binding()` -> `let result = $.binding('mylib.dll', 'my_function_name', ['my_function_argument'])` (note: binding arguments can only be strings, if integers are needed convert them to 'i32's inside of the Rust code)
+- `$.argv()` -> `let arguments = $.argv()`
+- `$.binding()` -> `let result = $.binding('mylib.dll', 'my_function_name', ['my_function_argument'])` (note: binding arguments can only be strings, if integers are needed convert them to 'i32's inside of the Rust code)
+
 <hr>
 
 # SPWN Language
