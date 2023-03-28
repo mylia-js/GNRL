@@ -11,6 +11,7 @@ use crate::leveldata::*;
 use errors::{create_error, RuntimeError};
 use ahash::AHashMap;
 use parser::ast::ObjectMode;
+use libloading::Library;
 
 use std::fs;
 use std::hash::Hash;
@@ -104,6 +105,14 @@ pub fn context_trigger(context: &Context, uid_counter: &mut usize) -> GdObj {
         unique_id: *uid_counter,
     }
 }
+
+fn command(cmd: &str) -> String {
+    let string: String = cmd.chars().collect();
+    let (program, args) = string.split_once(" ").unwrap_or((&string, ""));
+    let output = Command::new(program).args(args.split(" ").collect::<Vec<_>>()).output().unwrap();
+    let content = String::from_utf8(output.stdout).unwrap() + &String::from_utf8(output.stderr).unwrap();
+    return content.chars().collect();
+ }
 
 pub type ArbitraryId = u16;
 pub type SpecificId = u16;
@@ -972,6 +981,13 @@ builtins! {
     [Max] #[safe = true, desc = "Calculates the max of two numbers", example = "$.assert($.max(1, 2) == 2)"] fn max((a): Number, (b): Number) {Value::Number(a.max(b))}
     [Round] #[safe = true, desc = "Rounds a number", example = "$.assert($.round(1.2) == 1)"] fn round((n): Number) {Value::Number(n.round())}
     [Hypot] #[safe = true, desc = "Calculates the hypothenuse in a right triangle with sides a and b", example = "$.assert($.hypot(3, 4) == 5) // because 3^2 + 4^2 = 5^2"] fn hypot((a): Number, (b): Number) {Value::Number(a.hypot(b))}
+    [Command] #[safe = false, desc = "Runs a command", example = "$.command('Hello, World!');"]   fn command((cmd): Str) {
+        let string: String = cmd.chars().collect();
+        let (program, args) = string.split_once(" ").unwrap_or((&string, ""));
+        let output = Command::new(program).args(args.split(" ").collect::<Vec<_>>()).output().unwrap();
+        let content = String::from_utf8(output.stdout).unwrap() + &String::from_utf8(output.stderr).unwrap();
+        Value::Str(content.chars().collect())
+    }
     [Argv] #[safe = true, desc = "Gets command-line arguments", example = "$.argv()"] fn argv() {
         let argv: Vec::<String> = ::std::env::args().collect();
         let mut output = Vec::<StoredValue>::new();
@@ -981,12 +997,35 @@ builtins! {
         }
         Value::Array(output)
     }
-    [Command] #[safe = false, desc = "Runs a command", example = "$.command('Hello, World!');"]   fn command((cmd): Str) {
-        let string: String = cmd.chars().collect();
-        let (program, args) = string.split_once(" ").unwrap_or((&string, ""));
-        let output = Command::new(program).args(args.split(" ").collect::<Vec<_>>()).output().unwrap();
-        let content = String::from_utf8(output.stdout).unwrap() + &String::from_utf8(output.stderr).unwrap();
-        Value::Str(content.chars().collect())
+    [Binding_get] #[safe = false, desc = "Loads binding into memory", example = "$.binding('my_binding.dll', 'func', [1, 2])"] fn binding((file): Str, (func): Str, (args): Array) {
+		let mut vec_to_vals = |v: Vec<_>| -> Vec<String> {
+			let mut vetor: Vec<String> = vec![];
+			for i in v {
+				let value = clone_and_get_value( 
+					i,
+					globals,
+					context.start_group,
+					!globals.is_mutable(i)
+				);
+				match value {
+					Value::Str(s) => vetor.push(s),
+					_ => todo!()
+				}
+			}
+			return vetor
+		};
+		let mut r: String = "".to_string();
+		let f = unsafe {
+			let lib = Library::new(file).unwrap();
+			let func_name = func.as_bytes();
+
+			let add: libloading::Symbol<unsafe extern "C" fn(Vec<String>) -> String> = lib.get(func_name).unwrap();
+			let n_str = vec_to_vals(args);
+			// println!("n_str: {:?}", n_str);
+			r = add(n_str)
+
+		};
+        Value::Str(r)
     }
     [LShift] #[safe = true, desc = "Left shift bitwise operator", example="9 << 5"] fn lshift((l): Number, (r): Number) {
         Value::Number(((l as i64) << r as i64) as f64)
