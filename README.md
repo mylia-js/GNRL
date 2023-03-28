@@ -13,9 +13,8 @@ A general-purpose fork of the SPWN programming language
 - Allowing unknown arguments (for $.argv) (☓)
 - $.command() (√)
 - $.exit() (√)
-- $.binding() (..., function is finished but is being rewritten into Rust)
+- $.binding() (√)
 - Bitwise operators (√)
-- BNDR CLI (☓)
 ```
 
 <hr>
